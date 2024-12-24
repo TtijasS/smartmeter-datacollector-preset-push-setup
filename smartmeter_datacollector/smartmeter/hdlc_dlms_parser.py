@@ -107,7 +107,23 @@ class HdlcDlmsParser:
             dlms_objects = self._parse_dlms_without_push_list()
             if not dlms_objects:
                 # message contains no OBIS codes, only values, which is not supported.
-                LOGGER.warning("DLMS message is formatted in unknown structure and cannot be parsed by this software.")
+                LOGGER.warning("DLMS message is formatted in unknown structure.")
+                LOGGER.info("Trying forced OBIS method")
+                pushlist_telegram_1 = [[40, bytearray(b'\x00\x08\x19\t\x00\xff'), 2, 0], [1, bytearray(b'\x00\x00*\x00\x00\xff'), 2, 0], [1, bytearray(b'\x00\x00`\x01\x02\xff'), 2, 0], [3, bytearray(b'\x01\x00\x01\x07\x00\xff'), 2, 0], [3, bytearray(b'\x01\x00\x02\x07\x00\xff'), 2, 0], [3, bytearray(b'\x01\x00\x03\x07\x00\xff'), 2, 0], [3, bytearray(b'\x01\x00\x04\x07\x00\xff'), 2, 0], [3, bytearray(b'\x01\x00 \x07\x00\xff'), 2, 0], [3, bytearray(b'\x01\x004\x07\x00\xff'), 2, 0], [3, bytearray(b'\x01\x00H\x07\x00\xff'), 2, 0], [3, bytearray(b'\x01\x00\x1f\x07\x00\xff'), 2, 0], [3, bytearray(b'\x01\x003\x07\x00\xff'), 2, 0], [3, bytearray(b'\x01\x00G\x07\x00\xff'), 2, 0], [3, bytearray(b'\x01\x00\x15\x07\x00\xff'), 2, 0], [3, bytearray(b'\x01\x00)\x07\x00\xff'), 2, 0], [3, bytearray(b'\x01\x00=\x07\x00\xff'), 2, 0], [3, bytearray(b'\x01\x00\x16\x07\x00\xff'), 2, 0], [3, bytearray(b'\x01\x00*\x07\x00\xff'), 2, 0], [3, bytearray(b'\x01\x00>\x07\x00\xff'), 2, 0]]
+                pushlist_telegram_2 = [[40, bytearray(b'\x00\t\x19\t\x00\xff'), 2, 0], [1, bytearray(b'\x00\x00*\x00\x00\xff'), 2, 0], [1, bytearray(b'\x00\x00`\x01\x03\xff'), 2, 0], [70, bytearray(b'\x00\x00`\x03\n\xff'), 2, 0], [1, bytearray(b'\x00\x00`\x0e\x00\xff'), 2, 0], [3, bytearray(b'\x01\x00\x01\x08\x00\xff'), 2, 0], [3, bytearray(b'\x01\x00\x01\x08\x01\xff'), 2, 0], [3, bytearray(b'\x01\x00\x01\x08\x02\xff'), 2, 0], [3, bytearray(b'\x01\x00\x02\x08\x00\xff'), 2, 0], [3, bytearray(b'\x01\x00\x02\x08\x01\xff'), 2, 0], [3, bytearray(b'\x01\x00\x02\x08\x02\xff'), 2, 0], [3, bytearray(b'\x01\x00\x03\x08\x00\xff'), 2, 0], [3, bytearray(b'\x01\x00\x04\x08\x00\xff'), 2, 0]]
+                if len(self._dlms_data.value) == 18:
+                    self._dlms_data.value.insert(0, pushlist_telegram_1)
+                elif len(self._dlms_data.value) == 12:
+                    self._dlms_data.value.insert(0, pushlist_telegram_2)
+                else:
+                    LOGGER.error("Parsed list len mismatch. Found len: %i", len(self._dlms_data.value))
+                    dlms_objects = []
+                if isinstance(self._dlms_data.value[0], list):
+                    # message with included push-object-list as first object
+                    dlms_objects = self._parse_dlms_with_push_object_list()
+                    if not dlms_objects:
+                        LOGGER.warning("Forced OBIS method failed.")
+                        dlms_objects = []
         self._dlms_data.clear()
         return dlms_objects
 
